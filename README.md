@@ -11,14 +11,12 @@ To run this code locally, follow the steps below:
 3. Install the required packages from the `requirements.txt` file:
 
    ```bash
-   Copy code
    pip install -r requirements.txt
 	```
    
 - Since the MADDPG and multiagent environment are used from local paths, you need to install them in editable mode. Assuming you cloned this repository in a directory named maddpg-implementation, run the following commands:
 
 	 ```bash
-	Copy code
 	pip install -e ./maddpg-implementation/maddpg
 	pip install -e ./maddpg-implementation/multiagent-particle-envs
 	```
