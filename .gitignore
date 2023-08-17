@@ -1,1 +1,2 @@
 /learning_curves/plots/
+/maddpg/experiments/**/*.txt
