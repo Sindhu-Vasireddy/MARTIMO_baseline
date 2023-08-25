@@ -13,17 +13,15 @@ To run this code locally, follow the steps below:
    ```bash
    pip install -r requirements.txt
 	```
-   
-- Since the MADDPG and multiagent environment are used from local paths, you need to install them in editable mode. Assuming you cloned this repository in a directory named maddpg-implementation, run the following commands:
+Since the MADDPG and multiagent environment are used from local paths, you need to install them in editable mode. Assuming you cloned this repository in a directory named maddpg-implementation, run the following commands:
 
-	 ```bash
-	pip install -e ./maddpg-implementation/maddpg
-	pip install -e ./maddpg-implementation/multiagent-particle-envs
-	```
-
+ ```bash
+Copy code
+pip install -e ./maddpg-implementation/maddpg
+pip install -e ./maddpg-implementation/multiagent-particle-envs ```
 Run the main script to start the reinforcement learning process.
 
-### Project Structure
+Project Structure
 The project contains the following directories:
 
 - learning_curves: Contains learning curve data as pickle files along with a python script for parsing.
@@ -31,3 +29,13 @@ The project contains the following directories:
 - multiagent-particle-envs: Modified multiagent particle environments with sensor classes adapted from the latest Stonesoup library.
 policy: Policy networks.
 - TensorflowUpatedMaddpg: MADDPG implementation using TensorFlow 2.0 (if needed separately).
+
+Contributing
+If you want to contribute to this project, please follow the standard GitHub workflow:
+
+Fork the repository.
+Create a new branch for your feature/bugfix.
+Make your changes and commit them.
+Push the changes to your fork.
+Create a pull request to the main repository.
+Please ensure your code follows the project's coding conventions and includes appropriate unit tests.
