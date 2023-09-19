@@ -18,8 +18,7 @@ Since the MADDPG and multiagent environment are used from local paths, you need 
  ```bash
 Copy code
 pip install -e ./maddpg-implementation/maddpg
-pip install -e ./maddpg-implementation/multiagent-particle-envs
- ```
+pip install -e ./maddpg-implementation/multiagent-particle-envs ```
 Run the main script to start the reinforcement learning process.
 
 Project Structure
