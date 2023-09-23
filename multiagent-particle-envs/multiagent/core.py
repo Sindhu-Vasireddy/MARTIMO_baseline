@@ -22,7 +22,7 @@ class SensorState(EntityState):
 class SensorAction(object):
      def __init__(self):
         # dwell centre action 
-         self.dc =np.random.randint(0, 2)   
+         self.dc =0   
 
 # properties and state of physical world entity
 class Entity(object):
@@ -77,8 +77,6 @@ class SensorAgent(Entity,RadarRotatingBearingRange):
         # max speed and accel
         self.max_speed = None
         self.accel = None
-        # state
-        self.state = EntityState()
         # mass
         self.initial_mass = 1.0
         # dwell centre noise amount
@@ -116,8 +114,7 @@ class World(object):
         self.dt = 1
         self.start_time =datetime.now()
         self.predictor = KalmanPredictor(CombinedLinearGaussianTransitionModel([ConstantVelocity(0.005),ConstantVelocity(0.005)])) # CombinedLinearGaussianTransitionModel
-        self.updater = ExtendedKalmanUpdater(measurement_model=None) # #self.agents[0].measurement_model CartesiantoBearingRange- it gets it from the RotatingRadarBearingRange measurement_model!
-        
+        self.updater = ExtendedKalmanUpdater(measurement_model=None) # #self.agents[0].measurement_model CartesiantoBearingRange- it gets it from the RotatingRadarBearingRange measurement_model!        
 
     # return all entities in the world
     @property
@@ -129,16 +126,8 @@ class World(object):
     def policy_agents(self):
         return [agent for agent in self.agents if agent.action_callback is None]
 
-    # return all agents controlled by world scripts
-    @property
-    def scripted_agents(self):
-        return [agent for agent in self.agents if agent.action_callback is not None]
-
     # update state of the world
     def step(self):
-        # set actions for scripted agents 
-        for agent in self.scripted_agents:
-            agent.action = agent.action_callback(agent,self)
         j=0
         for landmark in self.landmarks:
             landmark.gtst= GroundTruthPath([GroundTruthState(landmark.model.function(landmark.gtst, noise=True, time_interval=timedelta(seconds=1)),
@@ -150,38 +139,3 @@ class World(object):
             landmark.state.p_pos = [landmark.gtst.state_vector[0],landmark.gtst.state_vector[2]]
             landmark.state.p_vel = [landmark.gtst.state_vector[1],landmark.gtst.state_vector[3]]
         self.dt+=1 # increment step
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-        # update agent state since it is already done inside sensor actor, update everything within it
-        # for agent in self.agents:
-        #     self.update_agent_state(agent)
-
-    # def update_agent_state(self, agent):
-    #     # only for dwell centre
-    #     noise = np.random.randn(*agent.action.dc.shape) * agent.dc_noise if agent.dc_noise else 0.0
-    #     agent.state.dwellcentre = agent.action.dc + noise  
-    #     agent.sensor_actor(agent,self,self.start_time,agent.tracks)
