@@ -2,3 +2,4 @@
 /learning_curves/**/*.pkl
 /maddpg/experiments/**/*.txt
 /.vscode/
+/learning_curves/plots/

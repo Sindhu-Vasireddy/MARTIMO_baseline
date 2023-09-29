@@ -8,18 +8,23 @@ To run this code locally, follow the steps below:
 
 1. Clone this repository to your local machine.
 2. Set up a virtual environment and activate it (recommended but optional).
-3. Install the required packages from the `requirements.txt` file:
+3. Install the required packages from the `requirements.txt` file with `python==3.8.17`:
 
    ```bash Copy code
    pip install -r requirements.txt
    ```
-Since the MADDPG and multiagent environment are used from local paths, you need to install them in editable mode. Assuming you cloned this repository in a directory named maddpg-implementation, run the following commands:
+Since the MADDPG and multiagent environment are used from local paths, you need to install them in editable mode, run the following commands from the root directory:
 
  ```bash Copy code
- pip install -e ./maddpg-implementation/maddpg
- pip install -e ./maddpg-implementation/multiagent-particle-envs 
+ pip install -e ./maddpg
+ pip install -e ./multiagent-particle-envs 
  ```
-Run the main script to start the reinforcement learning process.
+Run the main train script to start the reinforcement learning process with the default parameters.
+
+ ```bash Copy code
+ cd maddpg/experiments
+ python train.py
+ ```
 
 ## Project Structure
 The project contains the following directories:
