@@ -12,31 +12,35 @@ from stonesoup.plotter import Plotter, Dimension
 import matplotlib.pyplot as plt
 
 def parse_args():
+    # Define the relative path to the default save directory
+    #default_save_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..", "policy","\\")
+    # default_save_dir = default_save_dir.replace("\\", "\\\\")
+
     parser = argparse.ArgumentParser("Reinforcement Learning experiments for multiagent environments")
     # Environment
     parser.add_argument("--scenario", type=str, default="mtt_scenario", help="name of the scenario script")
-    parser.add_argument("--max-episode-len", type=int, default=50, help="maximum episode length")
-    parser.add_argument("--num-episodes", type=int, default=100, help="number of episodes")
+    parser.add_argument("--max-episode-len", type=int, default=100, help="maximum episode length")
+    parser.add_argument("--num-episodes", type=int, default=1000000, help="number of episodes")
     parser.add_argument("--num-adversaries", type=int, default=0, help="number of adversaries")
     parser.add_argument("--good-policy", type=str, default="maddpg", help="policy for good agents")
     parser.add_argument("--adv-policy", type=str, default="maddpg", help="policy of adversaries")
     # Core training parameters
     parser.add_argument("--lr", type=float, default=1e-2, help="learning rate for Adam optimizer")
     parser.add_argument("--gamma", type=float, default=0.95, help="discount factor")
-    parser.add_argument("--batch-size", type=int, default=5, help="number of episodes to optimize at the same time")
-    parser.add_argument("--num-units", type=int, default=64, help="number of units in the mlp")
+    parser.add_argument("--batch-size", type=int, default=25, help="number of episodes to optimize at the same time")
+    parser.add_argument("--num-units", type=int, default=128, help="number of units in the mlp")
     # Checkpointing
     parser.add_argument("--exp-name", type=str, default="mtt_test_full", help="name of the experiment")
-    parser.add_argument("--save-dir", type=str, default="C:\\Users\\reach\\OneDrive\\Documents\\maddpg_basic\\policy\\", help="directory in which training state and model should be saved")
-    parser.add_argument("--save-rate", type=int, default=10, help="save model once every time this many episodes are completed")
+    parser.add_argument("--save-dir", type=str, default="../../policy/", help="directory in which training state and model should be saved")
+    parser.add_argument("--save-rate", type=int, default=100, help="save model once every time this many episodes are completed")
     parser.add_argument("--load-dir", type=str, default="", help="directory in which training state and model are loaded")
     # Evaluation
     parser.add_argument("--restore", action="store_true", default=False)
     parser.add_argument("--display", action="store_true", default=False)
     parser.add_argument("--benchmark", action="store_true", default=False)
-    parser.add_argument("--benchmark-iters", type=int, default=100, help="number of iterations run for benchmarking")
-    parser.add_argument("--benchmark-dir", type=str, default="C:\\Users\\reach\\OneDrive\\Documents\\maddpg_basic\\benchmark_files\\", help="directory where benchmark data is saved")
-    parser.add_argument("--plots-dir", type=str, default="C:\\Users\\reach\\OneDrive\\Documents\\maddpg_basic\\learning_curves\\", help="directory where plot data is saved")
+    parser.add_argument("--benchmark-iters", type=int, default=500, help="number of iterations run for benchmarking")
+    parser.add_argument("--benchmark-dir", type=str, default="../../benchmark_files/", help="directory where benchmark data is saved")
+    parser.add_argument("--plots-dir", type=str, default="../../learning_curves/", help="directory where plot data is saved")
     return parser.parse_args()
 
 def mlp_model(input, num_outputs, scope, reuse=False, num_units=64, rnn_cell=None):
@@ -67,10 +71,10 @@ def get_trainers(env, num_adversaries, obs_shape_n, arglist):
     trainers = []
     model = mlp_model
     trainer = MADDPGAgentTrainer
-    for i in range(num_adversaries):
-        trainers.append(trainer(
-            "agent_%d" % i, model, obs_shape_n, env.action_space, i, arglist,
-            local_q_func=(arglist.adv_policy=='ddpg')))
+    # for i in range(num_adversaries):
+    #     trainers.append(trainer(
+    #         "agent_%d" % i, model, obs_shape_n, env.action_space, i, arglist,
+    #         local_q_func=(arglist.adv_policy=='ddpg')))
     for i in range(num_adversaries, env.n):
         trainers.append(trainer(
             "agent_%d" % i, model, obs_shape_n, env.action_space, i, arglist,
@@ -105,9 +109,8 @@ def train(arglist):
         loss_arr = []
         agent_info = [[[]]]  # placeholder for benchmarking info
         saver = tf.train.Saver()
+        
         obs_n = env.reset()
-        print("-"*180)
-        print("Initial episode obs",obs_n)
         episode_step = 0
         train_step = 0
         t_start = time.time()
@@ -116,15 +119,12 @@ def train(arglist):
         while True:
             # get action
             action_n = [agent.action(obs) for agent, obs in zip(trainers,obs_n)]
-            print("this is the action value in iteration: \n",action_n)
             # environment step
-            print("this is the observation value in iteration:\n",obs_n,"\n","*"*180)
             new_obs_n, rew_n, done_n, info_n = env.step(action_n)
             episode_step += 1
             done = all(done_n)
             terminal = (episode_step >= arglist.max_episode_len)
             # collect experience
-            # print("trainers",trainers)
             for i, agent in enumerate(trainers):
                 agent.experience(obs_n[i], action_n[i], rew_n[i], new_obs_n[i], done_n[i], terminal)
             obs_n = new_obs_n
@@ -134,42 +134,28 @@ def train(arglist):
                 agent_rewards[i][-1] += rew
 
             if done or terminal:
-                seni=0
                 # save values for plotting 
                 for agent in env.agents:
                     sensor_position = list(agent.movement_controller.states[0].state_vector.flatten())
-                    # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Sensor ",seni,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                    # print("length of sensor tracks is",[len(list(track)) for track in agent.tracks])
-                    # print("length of ground truth  is",[len(list(landmark.gtpt))for landmark in env.landmarks])
                     sensor_tracks = np.array([tuple(track.states[i].state_vector[[0, 2]].flatten().tolist())
-                        for track in agent.tracks for i in range(arglist.max_episode_len+1)]).reshape(3, arglist.max_episode_len+1, 2)
-                    print ("final episode tracks",str(sensor_tracks).replace("\n",""))
-                    print("get range",len(env.landmarks[0].gtpt.states))
+                        for track in agent.tracks for i in range(arglist.max_episode_len+1)]).reshape(len(env.landmarks), arglist.max_episode_len+1, 2)
+                    
                     sensor_truth = np.array([(landmark.gtpt.states[i].state_vector[0, 0], landmark.gtpt.states[i].state_vector[2, 0])
-                        for landmark in env.landmarks for i in range(arglist.max_episode_len+1)]).reshape(3, arglist.max_episode_len+1, 2)
-                    print ("final episode truth",str(sensor_truth).replace("\n",""))
+                        for landmark in env.landmarks for i in range(arglist.max_episode_len+1)]).reshape(len(env.landmarks), arglist.max_episode_len+1, 2)
                     
                     env.sensor_position.append(sensor_position)
                     env.sensor_tracks.append(sensor_tracks)
-                    env.sensor_truth.append(sensor_truth)
 
-                    # print("sensor position of episode:", sensor_position)
-                    # print("sensor tracks of episode:", sensor_tracks)
-                    # print("sensor truth of episode:", sensor_truth)
-                    # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                    seni+=1
+                    env.sensor_truth.append(sensor_truth)    
+                           
 
                 obs_n = env.reset()
-                print("end of episode obs",obs_n)
                 episode_step = 0
                 episode_rewards.append(0)
-                print("end of episode rew",episode_rewards)
                 for a in agent_rewards:
                     a.append(0)
                 agent_info.append([[]])
-                print("end of episode agent info",episode_rewards)
-                print("end of episode agent rew",agent_rewards)
-                print("#"*180)
+
 
 
             # increment global step counter
@@ -201,7 +187,7 @@ def train(arglist):
                 loss = agent.update(trainers, train_step)
             if loss:
                 loss_arr.append(loss)
-                print("Loss value at ",train_step,"is",loss)
+                # print("Loss value at ",train_step,"is",loss)
                 
 
             # save model, display training output
@@ -218,7 +204,7 @@ def train(arglist):
                 t_start = time.time()
                 # Keep track of final episode reward
                 final_ep_rewards.append(np.mean(episode_rewards[-arglist.save_rate:]))
-                print("final episode rewards",final_ep_rewards)
+                # print("final episode rewards",final_ep_rewards)
                 for rew in agent_rewards:
                     final_ep_ag_rewards.append(np.mean(rew[-arglist.save_rate:]))
 
@@ -230,55 +216,38 @@ def train(arglist):
                 agrew_file_name = arglist.plots_dir + arglist.exp_name + '_agrewards.pkl'
                 with open(agrew_file_name, 'wb') as fp:
                     pickle.dump(final_ep_ag_rewards, fp)
-                # print("*******************************************************************************************************************")
-                # print("sensor A tracks shape", env.sensor_tracks[-2].shape)
-                # print("sensor B tracks shape", env.sensor_tracks[-1].shape)
-                # print("sensor A truth shape", env.sensor_tracks[-2].shape)
-                # print("sensor B truth shape", env.sensor_tracks[-1].shape)
-                # print("sensor A tracks", env.sensor_tracks[-2])
-                # print("sensor B tracks", env.sensor_tracks[-1])
-                # print("sensor A truth", env.sensor_tracks[-2])
-                # print("sensor B truth", env.sensor_tracks[-1])
-                # print("*******************************************************************************************************************")
-
-                # # Create the plot for both sensor A and sensor B data
-                # fig, ax = plt.subplots()
-
-                # # Plot sensor B and sensor A data
-                # for sensor_tracks, sensor_truth, color in zip([env.sensor_tracks[0], env.sensor_tracks[1]], [env.sensor_truth[0], env.sensor_truth[1]], ['blue', 'red']):
-                #     sensor_tracks = np.array(sensor_tracks)
-                #     sensor_truth = np.array(sensor_truth)
-                    
-                #     for i in range(3):
-                #         ax.plot(sensor_tracks[i, :, 0], sensor_tracks[i, :, 1], color=color, marker='o', label=f'Sensor Track {i+1}')
-                #         ax.plot(sensor_truth[i, :, 0], sensor_truth[i, :, 1], color="green", marker='+', label=f'Sensor Ground Truth {i+1}')
-
-                # ax.set_xlabel('X')
-                # ax.set_ylabel('Y')
-                # ax.legend()
-                # plt.show()
-
+               
                 # Iterate over pairs of sensor tracks and truth
-                for i in range(0, len(env.sensor_tracks), 2):
+                for i in range(0, len(env.sensor_tracks), len(env.agents)):
                     fig, ax = plt.subplots()
-
-                    # Plot sensor B and sensor A data
-                    for sensor_tracks, sensor_truth, color in zip([env.sensor_tracks[i], env.sensor_tracks[i+1]], [env.sensor_truth[i], env.sensor_truth[i+1]], ['blue', 'red','green']):
-                        sensor_tracks = np.array(sensor_tracks)
-                        sensor_truth = np.array(sensor_truth)
                     
-                        for j in range(3):
+                    # Plot sensor B and sensor A data
+                    # env.sensor_tracks and env.sensor_truth dimensions are:
+                    # 100*(3*(2,51,2))=no_of_ep*(no_of_sensors*(no_of_targets,ep_len,x_y_coordinates))
+                    for k in range(len(env.agents)):  # Iterate from 0 to len(env.agents)-1
+                        sensor_tracks = np.array(env.sensor_tracks[i+k])
+                        sensor_truth = np.array(env.sensor_truth[i+k])
+                        color = ['blue', 'red', 'magenta', 'yellow','brown'][k]  # Choose color based on the current iteration
+
+                        for j in range(np.array(env.sensor_tracks).shape[1]):
                             ax.plot(sensor_tracks[j, :, 0], sensor_tracks[j, :, 1], color=color, marker='o', label=f'Sensor Track {j+1}')
-                            ax.plot(sensor_truth[j, :, 0], sensor_truth[j, :, 1], color="green", marker='+', label=f'Sensor Ground Truth {j+1}')
+                            ax.plot(sensor_truth[j, :, 0], sensor_truth[j, :, 1], color="green", marker='+', label=f'Target Grnd Truth {j+1}')
 
                     ax.set_xlabel('X')
                     ax.set_ylabel('Y')
-                    ax.legend()
+                    # Add a legend to the plot with 'bbox_to_anchor' to specify the legend's position
+                    ax.legend(loc='upper left', bbox_to_anchor=(1, 1))        
+
+                    # Generate the sensor indices for the file name
+                    sensor_indices = list(range(i, i+len(env.agents)))
                     
-                    # Save the plot as a .png file in the specified directory
-                    file_name = f"sensor_plots_{i}_{i+1}.png"
-                    save_path = os.path.join(r"C:\Users\reach\OneDrive\Documents\maddpg_basic\learning_curves\plots", file_name)
-                    plt.savefig(save_path)
+                    # Create the file name using the sensor indices
+                    file_name = f"Sensor_plot_{'_'.join(map(str, sensor_indices))}_Time_{i/len(env.agents)}.png"
+                    # Define the subdirectory and file name
+                    subdirectory = "plots"
+
+                    save_path = os.path.join(arglist.plots_dir,subdirectory,file_name)
+                    plt.savefig(save_path, bbox_inches='tight')
                     plt.close()
 
                 loss_file_name = arglist.plots_dir + arglist.exp_name + '_loss.pkl'
@@ -289,6 +258,22 @@ def train(arglist):
 if __name__ == '__main__':
     arglist = parse_args()
     print("Starting training at",time.time())
+    folder_path = os.path.join(arglist.plots_dir,"plots")
+
+    # Create the folder if it doesn't exist
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    # Remove all files in the folder if it exists
+    if os.path.exists(folder_path):
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+            if os.path.isfile(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    print(f"Error deleting {file_path}: {e}")
+
     train(arglist)
     print("finished training at",time.time())
 
