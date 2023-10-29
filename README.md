@@ -1,6 +1,19 @@
-# Reinforcement Learning using MADDPG
+# MARTIMO: Reinforcement Learning Illustrated using MADDPG
 
-This repository implements reinforcement learning using a modified version of OpenAI's MADDPG (Multi-Agent Deep Deterministic Policy Gradient) algorithm. The MADDPG algorithm is applied to a multi-agent environment using a modified version of the OpenAI multiagent particle environments, with sensor classes adapted from the latest Stonesoup library.
+This repository implements reinforcement learning using a modified version of OpenAI's [Multi-agent Particle Environment (MPE)](https://github.com/openai/multiagent-particle-envs) An illustration is provided using MADDPG (Multi-Agent Deep Deterministic Policy Gradient) algorithm with sensor classes adapted from the latest [Stonesoup library.](https://stonesoup.readthedocs.io/en/latest/stonesoup.html). This example scenario is called mtt_scenario for initial baseline testing purposes, this can be extended for any custom scenario and additional algorithms which will have in-house support in upcoming future. PRs are welcome.
+
+The framework is also shipped in a [docker image](https://hub.docker.com/repository/docker/sindhuvasireddy/maddpg-stonesoup-baseline/general) which is readily available to directly run the example scenario using 
+```python Copy code 
+docker pull sindhuvasireddy/maddpg-stonesoup-baseline:latest
+```
+and 
+```python Copy code 
+docker run sindhuvasireddy/maddpg-stonesoup-baseline:latest
+```
+If you would however prefer to run it with any different hyper-parameters then you could do them as well, 
+```python Copy code 
+docker run -it sindhuvasireddy/maddpg-stonesoup-baseline:latest python train.py --max-episode-len 10 --num-episodes 100 --batch-size 2 --save-rate 10
+```
 
 ## Getting Started
 
@@ -19,7 +32,10 @@ Since the MADDPG and multiagent environment are used from local paths, you need 
  pip install -e ./maddpg-implementation/maddpg
  pip install -e ./maddpg-implementation/multiagent-particle-envs 
  ```
-Run the main script to start the reinforcement learning process.
+Run the main script to start the reinforcement learning process. 
+```python Copy code
+python maddpg/experiments/train.py
+```
 
 ## Project Structure
 The project contains the following directories:
